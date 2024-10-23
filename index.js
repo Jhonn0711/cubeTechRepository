@@ -13,7 +13,6 @@ async function bot(){
     await browser.close(); // close para evitar vários navegadores/abas de navegador;
 }
 
-
 async function getMoneyConvert(){ //busca a moeda desejada pelo usuário;
     const coinBase = readlineSync.question('Qual a moeda base para conversão?') || 'dolar';
     const convertCoin = readlineSync.question('Qual a moeda desejada?') || 'real';
