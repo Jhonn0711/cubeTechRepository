@@ -34,28 +34,54 @@ async function getMoneyConvert(){ //busca a moeda desejada pelo usuário;
 }
 
 async function getPrecosProdutosPac(url, searchItem, urlVal){
-    const browser = await puppeteer.launch({headless: false});
-    const page = await browser.newPage();
+    let browser = await puppeteer.launch({headless: false});
+    let page = await browser.newPage();
     await page.goto(url); 
 
-    return retornaItensBuscaPrecos(urlVal, searchItem);   
-}
-
-async function retornaItensBuscaPrecos(urlVal, searchItem){
-
     switch(urlVal){
+        //mercado livre
         case 1:
-            // await page.waitForSelector('#cb1-edit');
+            await page.waitForSelector('#cb1-edit');
 
-            // await page.type('#cb1-edit', searchItem);
+            await page.type('#cb1-edit', searchItem);
 
-            // await Promise.all([
-            //     page.waitForNavigation(),
-            //     page.click('.nav-search-btn'),
-            //     page.waitForSelector('a.ui-search-link__title-card'),
-            // ]);
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('.nav-search-btn'),
+                page.waitForSelector('a.ui-search-link__title-card'),
+            ]);
 
-            // const links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
+            var links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
+
+
+            let index = 1;
+            var array = [];
+            for (const element of links) {
+                await page.goto(element);
+
+                await page.waitForSelector('.ui-pdp-title');
+
+                const title = await page.$eval('.ui-pdp-title', element => element.innerText);
+                const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
+
+                const object = {title, price};
+
+                array.push(object);
+                index++;
+            }
+
+        //angeloni
+        case 2:
+            await page.waitForSelector('#downshift-1-input');
+            await page.type('#downshift-1-input', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('.vtex-store-components-3-x-searchBarIcon'),
+                page.waitForSelector('a.ui-search-link__title-card'),
+            ]);
+
+            var links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
 
 
             // let index = 1;
@@ -73,44 +99,14 @@ async function retornaItensBuscaPrecos(urlVal, searchItem){
             //     array.push(object);
             //     index++;
             // }
-            await browser.close();
 
-            return console.log(1)
+            // await browser.close();
     }
-
-    // await page.waitForSelector('#downshift-0-input');
-
-    // await page.type('#downshift-0-input', searchItem);
-
-    // await Promise.all([
-    //     page.waitForNavigation(),
-    //     page.click('.nav-search-btn'),
-    //     page.waitForSelector('a.ui-search-link__title-card'),
-    // ]);
-
-    // const links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
-
-
-    // let index = 1;
-    // var array = [];
-    // for (const element of links) {
-    //     await page.goto(element);
-
-    //     await page.waitForSelector('.ui-pdp-title');
-
-    //     const title = await page.$eval('.ui-pdp-title', element => element.innerText);
-    //     const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
-
-    //     const object = {title, price};
-
-    //     array.push(object);
-    //     index++;
-    // }
-
-    // await browser.close();
 
     return /* await array */;
 }
+
+
 
 const mercadolivre = 'https://www.mercadolivre.com.br';
 const angeloni = 'https://www.angeloni.com.br/eletro/';
