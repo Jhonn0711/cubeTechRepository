@@ -33,44 +33,144 @@ async function getMoneyConvert(){ //busca a moeda desejada pelo usuário;
     return;
 }
 
-async function getPrecosProdutosPac(url, searchItem){
+async function getPrecosProdutosPac(url, searchItem, urlVal){
     const browser = await puppeteer.launch({headless: false});
     const page = await browser.newPage();
     await page.goto(url); 
 
-    await page.waitForSelector('#cb1-edit');
+    return retornaItensBuscaPrecos(urlVal, searchItem);   
+}
 
-    await page.type('#cb1-edit', searchItem);
+async function retornaItensBuscaPrecos(urlVal, searchItem){
 
-    await Promise.all([
-        page.waitForNavigation(),
-        page.click('.nav-search-btn'),
-        page.waitForSelector('a.ui-search-link__title-card'),
-    ]);
+    switch(urlVal){
+        case 1:
+            // await page.waitForSelector('#cb1-edit');
 
-    const links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
+            // await page.type('#cb1-edit', searchItem);
+
+            // await Promise.all([
+            //     page.waitForNavigation(),
+            //     page.click('.nav-search-btn'),
+            //     page.waitForSelector('a.ui-search-link__title-card'),
+            // ]);
+
+            // const links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
 
 
-    let index = 1;
-    var array = [];
-    for (const element of links) {
-        await page.goto(element);
+            // let index = 1;
+            // var array = [];
+            // for (const element of links) {
+            //     await page.goto(element);
 
-        await page.waitForSelector('.ui-pdp-title');
+            //     await page.waitForSelector('.ui-pdp-title');
 
-        const title = await page.$eval('.ui-pdp-title', element => element.innerText);
-        const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
+            //     const title = await page.$eval('.ui-pdp-title', element => element.innerText);
+            //     const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
 
-        const object = {title, price};
+            //     const object = {title, price};
 
-        array.push(object);
-        index++;
+            //     array.push(object);
+            //     index++;
+            // }
+            await browser.close();
+
+            return console.log(1)
     }
 
-    await browser.close();
+    // await page.waitForSelector('#downshift-0-input');
 
-    return await array;
-} 
+    // await page.type('#downshift-0-input', searchItem);
 
-const url = 'https://www.mercadolivre.com.br';
-console.log(getPrecosProdutosPac(url, 'celular'));
+    // await Promise.all([
+    //     page.waitForNavigation(),
+    //     page.click('.nav-search-btn'),
+    //     page.waitForSelector('a.ui-search-link__title-card'),
+    // ]);
+
+    // const links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
+
+
+    // let index = 1;
+    // var array = [];
+    // for (const element of links) {
+    //     await page.goto(element);
+
+    //     await page.waitForSelector('.ui-pdp-title');
+
+    //     const title = await page.$eval('.ui-pdp-title', element => element.innerText);
+    //     const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
+
+    //     const object = {title, price};
+
+    //     array.push(object);
+    //     index++;
+    // }
+
+    // await browser.close();
+
+    return /* await array */;
+}
+
+const mercadolivre = 'https://www.mercadolivre.com.br';
+const angeloni = 'https://www.angeloni.com.br/eletro/';
+const giassi =  'https://www.giassi.com.br/';
+const bistek =  'https://www.bistek.com.br/';
+const americanas =  'https://www.americanas.com.br/';
+const magazineluiza = 'https://www.magazineluiza.com.br/';
+const casasbahia =  'https://www.casasbahia.com.br/';
+const kalunga =  'https://www.kalunga.com.br/';
+const correaback =  'https://www.correaback.com.br/';
+const madeiramadeira =  'https://www.madeiramadeira.com.br/';
+const mobly =  'https://www.mobly.com.br/';
+const leroymerlin =  'https://www.leroymerlin.com.br/';
+const colombo =  'https://www.colombo.com.br/';
+const koerich = 'https://www.koerich.com.br/';
+const casasdaagua =  'https://www.casasdaagua.com.br/';
+const cassol =  'https://www.cassol.com.br/';
+const queroquero =  'https://www.queroquero.com.br/';
+const havan =  'https://www.havan.com.br/';
+const digitusul =  'https://www.digitusul.com.br/';
+const dell = 'https://www.dell.com/pt-br';
+const kabum = 'https://www.kabum.com.br/';
+const milium =  'https://www.milium.com.br/';
+const casadoeletricistasc =  'https://www.casadoeletricistasc.com.br/';
+const casadosuniformes =  'https://www.casadosuniformes.com.br/';
+const fatimacrianca =  'https://www.fatimacrianca.com.br/';
+const fatimaesportes =  'https://www.fatimaesportes.com.br/';
+const centauro =  'https://www.centauro.com.br/';
+const netshoes =  'https://www.netshoes.com.br/';
+
+const mercadolivreVal = 1; 
+const angeloniVal = 2; 
+const giassiVal = 3; 
+const bistekVal = 4; 
+const americanasVal = 5; 
+const magazineluizaVal = 6; 
+const casasbahiaVal = 7; 
+const kalungaVal = 8; 
+const correabackVal = 9; 
+const madeiramadeiraVal = 10; 
+const moblyVal = 11; 
+const leroymerlinVal = 12; 
+const colomboVal = 13; 
+const koerichVal = 14; 
+const casasdaaguaVal = 15; 
+const cassolVal = 16; 
+const queroqueroVal = 17; 
+const havanVal = 18; 
+const digitusulVal = 19; 
+const dellVal = 20; 
+const kabumVal = 21; 
+const miliumVal = 22; 
+const casadoeletricistascVal = 23; 
+const casadosuniformesVal = 24; 
+const fatimacriancaVal = 25; 
+const fatimaesportesVal = 26; 
+const centauroVal = 27; 
+const netshoesVal = 28;
+
+
+const url = angeloni;
+
+console.log(getPrecosProdutosPac(url, 'celular', angeloniVal));
