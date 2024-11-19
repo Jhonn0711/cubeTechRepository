@@ -34,6 +34,9 @@ async function getMoneyConvert(){ //busca a moeda desejada pelo usuário;
 }
 
 async function getPrecosProdutosPac(url, searchItem, urlVal){
+
+    var array = [];
+
     let browser = await puppeteer.launch({headless: false});
     let page = await browser.newPage();
     await page.goto(url); 
@@ -54,8 +57,8 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             var links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
 
 
-            let index = 1;
-            var array = [];
+            var index = 1;
+
             for (const element of links) {
                 await page.goto(element);
 
@@ -69,6 +72,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 array.push(object);
                 index++;
             }
+            break;
 
         //angeloni
         case 2:
@@ -78,14 +82,12 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             await Promise.all([
                 page.waitForNavigation(),
                 page.click('.vtex-store-components-3-x-searchBarIcon'),
-                page.waitForSelector('a.ui-search-link__title-card'),
+                page.waitForSelector('.vtex-product-summary-2-x-containerNormal a'),
             ]);
 
-            var links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
-
-
-            // let index = 1;
-            // var array = [];
+            var links = await page.$$eval('.vtex-product-summary-2-x-containerNormal a', elements => elements.map(link => link.href));      
+            console.log(links);
+            // var index = 1;
             // for (const element of links) {
             //     await page.goto(element);
 
@@ -100,10 +102,62 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             //     index++;
             // }
 
-            // await browser.close();
+            // await browser.close();            
+            break;
+
+
+        case 3:
+            await page.waitForSelector('#downshift-1-input');
+            await page.type('#downshift-1-input', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('.vtex-store-components-3-x-searchBarIcon'),
+                page.waitForSelector('div#gallery-layout-container'),
+            ]);
+
+            var links = await page.$$eval('div#gallery-layout-container a.vtex-product-summary-2-x-clearLink', elements => elements.map(link => link.href));      
+
+            for (const element of links) {
+                await page.goto(element);
+            
+                try {
+                    await page.waitForSelector('.vtex-store-components-3-x-productBrand--quickview', { timeout: 5000 });
+                    const title = await page.$eval('.vtex-store-components-3-x-productBrand--quickview', el => el.innerText);
+            
+                    let prices = [];
+                    
+                    if (await page.$('.giassi-apps-custom-0-x-priceUnit')) {
+                        const priceUnit = await page.$eval('.giassi-apps-custom-0-x-priceUnit', el => el.innerText);
+                        prices.push(priceUnit);
+                    }
+                    if (await page.$('.giassi-apps-custom-0-x-priceTotalUnita')) {
+                        const priceTotalUnita = await page.$eval('.giassi-apps-custom-0-x-priceTotalUnita', el => el.innerText);
+                        prices.push(priceTotalUnita);
+                    }
+                    if (await page.$('.giassi-apps-custom-0-x-priceTotalUnit')) {
+                        const priceTotalUnit = await page.$eval('.giassi-apps-custom-0-x-priceTotalUnit', el => el.innerText);
+                        prices.push(priceTotalUnit);
+                    }
+            
+                    const price = prices.length > 0 ? prices.join(" | ") : "Preço não encontrado";
+            
+                    array.push({ title, price });
+            
+                    await page.screenshot({ path: `imagem_item_${array.length}.png` });
+                } catch (error) {
+                    console.error(`Erro ao processar o link ${element}:`, error.message);
+                }
+            }
+            
+
+            await browser.close();
+            break;
     }
 
-    return /* await array */;
+    console.log(array)
+
+    return await array;
 }
 
 
@@ -137,36 +191,8 @@ const fatimaesportes =  'https://www.fatimaesportes.com.br/';
 const centauro =  'https://www.centauro.com.br/';
 const netshoes =  'https://www.netshoes.com.br/';
 
-const mercadolivreVal = 1; 
-const angeloniVal = 2; 
-const giassiVal = 3; 
-const bistekVal = 4; 
-const americanasVal = 5; 
-const magazineluizaVal = 6; 
-const casasbahiaVal = 7; 
-const kalungaVal = 8; 
-const correabackVal = 9; 
-const madeiramadeiraVal = 10; 
-const moblyVal = 11; 
-const leroymerlinVal = 12; 
-const colomboVal = 13; 
-const koerichVal = 14; 
-const casasdaaguaVal = 15; 
-const cassolVal = 16; 
-const queroqueroVal = 17; 
-const havanVal = 18; 
-const digitusulVal = 19; 
-const dellVal = 20; 
-const kabumVal = 21; 
-const miliumVal = 22; 
-const casadoeletricistascVal = 23; 
-const casadosuniformesVal = 24; 
-const fatimacriancaVal = 25; 
-const fatimaesportesVal = 26; 
-const centauroVal = 27; 
-const netshoesVal = 28;
 
 
-const url = angeloni;
+const url = giassi;
 
-console.log(getPrecosProdutosPac(url, 'celular', angeloniVal));
+console.log(getPrecosProdutosPac(url, 'peru', 3));
