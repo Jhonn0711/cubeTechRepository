@@ -1,8 +1,6 @@
 const { get } = require('http');
 const readlineSync = require('readline-sync');
 const puppeteer = require('puppeteer');
-
-console.log('Bem vindo ao meu robozinho de scrapping 🤖');
     
 async function bot(){
     const browser = await puppeteer.launch({headless: true}); // .launch abre o browser; headless: true para não exibir o navegador em tela e false para exibir o processo;
@@ -55,58 +53,90 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             await Promise.all([
                 page.waitForNavigation(),
                 page.click('.nav-search-btn'),
-                page.waitForSelector('a.ui-search-link__title-card'),
+                page.waitForSelector('.ui-search-layout--stack'),
             ]);
 
-            var links = await page.$$eval('a.ui-search-link__title-card', elements => elements.map(link => link.href));      
+            console.log('links');
 
-
-            var index = 1;
+            var links = await page.$$eval('.poly-component__title a', elements =>
+                elements.slice(0, 10).map(link => link.href)
+            );
 
             for (const element of links) {
                 await page.goto(element);
 
                 await page.waitForSelector('.ui-pdp-title');
+                
+                let prices = [];
 
-                const title = await page.$eval('.ui-pdp-title', element => element.innerText);
-                const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
+                if (await page.$('.andes-money-amount__currency-symbol')) {
+                    // await page.waitForSelector('.andes-money-amount__currency-symbol', { timeout: 500 });
+                    const currencySymbol = await page.$eval('.andes-money-amount__currency-symbol', el => el.innerText);
+                    prices.push(currencySymbol);
+                }
 
-                const object = {title, price};
+                if (await page.$('.andes-money-amount__fraction')) {
+                    // await page.waitForSelector('.andes-money-amount__fraction', { timeout: 500 });
+                    const fraction = await page.$eval('.andes-money-amount__fraction', el => el.innerText);
+                    prices.push(fraction);
+                }
 
-                array.push(object);
-                index++;
+                if (await page.$('.andes-money-amount__cents')) {
+                    // await page.waitForSelector('.andes-money-amount__cents', { timeout: 500 });
+                    const cents = await page.$eval('.andes-money-amount__cents', el => el.innerText);
+                    prices.push(','+cents);
+                }
+
+                let title = await page.$eval('.ui-pdp-title', element => element.innerText);
+                let price = prices.length > 0 ? prices.join("") : "Preço não encontrado";
+                let desc = await page.$eval('.ui-pdp-description__content', el => el.innerText);
+                desc = desc.slice(0,500);
+                let link = element;
+                let site = url;
+                var t = (title).split(' ');
+                nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
+                
+                array.push({ title, price, desc, link, site });
+                await page.screenshot({ path: `mercadolivre_${(nome_item).toLowerCase()}.png` });
             }
+
             break;
 
         //angeloni
         case 2:
-            await page.waitForSelector('#downshift-1-input');
-            await page.type('#downshift-1-input', searchItem);
+            // await page.waitForSelector('#downshift-0-input');
+            // await page.type('#downshift-0-input', searchItem);
 
-            await Promise.all([
-                page.waitForNavigation(),
-                page.click('.vtex-store-components-3-x-searchBarIcon'),
-                page.waitForSelector('.vtex-product-summary-2-x-containerNormal a'),
-            ]);
+            // await Promise.all([
+            //     page.waitForNavigation(),
+            //     // page.waitForSelector('a.vtex-product-summary-2-x-clearLink--shelf-product'),
+            //     page.click('.vtex-store-components-3-x-searchBarIcon--header-options-bottom-search'),
+            // ]);
 
-            var links = await page.$$eval('.vtex-product-summary-2-x-containerNormal a', elements => elements.map(link => link.href));      
-            console.log(links);
-            // var index = 1;
-            // for (const element of links) {
-            //     await page.goto(element);
+            // // await page.waitForSelector('.vtex-product-summary-2-x-clearLink--shelf-product', { timeout: 500 });
 
-            //     await page.waitForSelector('.ui-pdp-title');
+            // var links = await page.$$eval(
+            //     '.vtex-search-result-3-x-gallery div a.vtex-product-summary-2-x-clearLink--shelf-product'/* , 
+            //     elements => elements.map(link => link.href) */
+            // );
 
-            //     const title = await page.$eval('.ui-pdp-title', element => element.innerText);
-            //     const price = await page.$eval('.andes-money-amount__fraction', element => element.innerText);
-
-            //     const object = {title, price};
-
-            //     array.push(object);
-            //     index++;
+            // if (links.length === 0) {
+            //     console.log("Nenhum link encontrado. Verifique o seletor ou o estado da página.");
+            // } else {
+            //     console.log(links);
             // }
 
-            // await browser.close();            
+            // break;
+            // for (const element of links) {
+            //     try{
+
+            //         await page.goto(element);            
+                
+            //     } catch (error) {
+            //         console.error(`Erro ao processar o link ${element}:`, error.message);
+            //     }
+            // }
+            
             break;
 
 
@@ -167,7 +197,17 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                         const priceTotalUnita = await page.$eval('.giassi-apps-custom-1-x-priceTotalUnita', el => el.innerText);
                         prices.push(priceTotalUnita);
                     }
-            
+                    if (await page.$('.giassi-apps-custom-0-x-listprice')) {
+                        await page.waitForSelector('.giassi-apps-custom-0-x-listprice', { timeout: 500 });
+                        const priceTotalUnita = await page.$eval('.giassi-apps-custom-0-x-listprice', el => el.innerText);
+                        prices.push('Valor original: '+priceTotalUnita+' | Promoções:');
+                    }
+                    if (await page.$('.giassi-apps-custom-1-x-listprice')) {
+                        await page.waitForSelector('.giassi-apps-custom-1-x-listprice', { timeout: 500 });
+                        const priceTotalUnita = await page.$eval('.giassi-apps-custom-1-x-listprice', el => el.innerText);
+                        prices.push('Valor original: '+priceTotalUnita+' | Promoções:');
+                    }
+
                     await page.waitForSelector('.vtex-store-components-3-x-content div[style="display:contents"]');
 
                     const price = prices.length > 0 ? prices.join(" | ") : "Preço não encontrado";
@@ -176,11 +216,11 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                         el => el.innerText.trim()
                     );  
                     const link = element;      
-                    
                     var t = (title).split(' ');
                     nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
+                    var site = url;
 
-                    array.push({ title, price, desc, link });
+                    array.push({ title, price, desc, link, site });
             
                     await page.screenshot({ path: `imagem_${(nome_item).toLowerCase()}.png` });
                 } catch (error) {
@@ -188,11 +228,14 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 }
             }
             
-
-            await browser.close();
             break;
+        
+        //bistek
+        case 4:
+            await page.waitForSelector('#avantivtexio-multi-items-search-1-x-searchBar--search-custom');
+            await page.type('#avantivtexio-multi-items-search-1-x-searchBar--search-custom', searchItem);
     }
-
+    await browser.close();
     return await array;
 }
 
@@ -227,8 +270,9 @@ const fatimaesportes =  'https://www.fatimaesportes.com.br/';
 const centauro =  'https://www.centauro.com.br/';
 const netshoes =  'https://www.netshoes.com.br/';
 
-getPrecosProdutosPac(giassi, 'peru', 3).then(retorno => {
-    console.log(retorno);
-}).catch(error => {
-    console.error("Erro ao obter os preços:", error);
-});
+(async ()=>{
+
+    var item = await readlineSync.question('Qual item vc deseja buscar?');
+    var teste = await getPrecosProdutosPac(bistek, item, 4);
+    console.log(teste);
+})()
