@@ -40,7 +40,11 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
     let browser = await puppeteer.launch({headless: false});
     let page = await browser.newPage();
     await page.goto(url); 
-
+    await page.setViewport({
+        width: 1920,
+        height: 1080 
+    });
+    
     switch(urlVal){
         //mercado livre
         case 1:
@@ -109,10 +113,11 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
         case 3:
             await page.waitForSelector('#downshift-1-input');
             await page.type('#downshift-1-input', searchItem);
-
+            
             await Promise.all([
                 page.waitForNavigation(),
                 page.click('.vtex-store-components-3-x-searchBarIcon'),
+                page.click('#cookiescript_accept'),
                 page.waitForSelector('div#gallery-layout-container'),
             ]);
 
@@ -123,28 +128,61 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             
                 try {
                     await page.waitForSelector('.vtex-store-components-3-x-productBrand--quickview', { timeout: 5000 });
+
                     const title = await page.$eval('.vtex-store-components-3-x-productBrand--quickview', el => el.innerText);
             
                     let prices = [];
                     
                     if (await page.$('.giassi-apps-custom-0-x-priceUnit')) {
+                        await page.waitForSelector('.giassi-apps-custom-0-x-priceUnit', { timeout: 500 });
                         const priceUnit = await page.$eval('.giassi-apps-custom-0-x-priceUnit', el => el.innerText);
                         prices.push(priceUnit);
                     }
                     if (await page.$('.giassi-apps-custom-0-x-priceTotalUnita')) {
+                        await page.waitForSelector('.giassi-apps-custom-0-x-priceTotalUnita', { timeout: 500 });
                         const priceTotalUnita = await page.$eval('.giassi-apps-custom-0-x-priceTotalUnita', el => el.innerText);
                         prices.push(priceTotalUnita);
                     }
                     if (await page.$('.giassi-apps-custom-0-x-priceTotalUnit')) {
+                        await page.waitForSelector('.giassi-apps-custom-0-x-priceTotalUnit', { timeout: 500 });
                         const priceTotalUnit = await page.$eval('.giassi-apps-custom-0-x-priceTotalUnit', el => el.innerText);
                         prices.push(priceTotalUnit);
                     }
+                    if (await page.$('.giassi-apps-custom-1-x-priceTotalUnit')) {
+                        await page.waitForSelector('.giassi-apps-custom-1-x-priceTotalUnit', { timeout: 500 });
+                        const priceTotalUnit = await page.$eval('.giassi-apps-custom-1-x-priceTotalUnit', el => el.innerText);
+                        prices.push(priceTotalUnit);
+                    }
+                    if(await page.$('.vtex-rich-text-0-x-paragraph--text-prod-indisponivel')){
+                        await page.waitForSelector('.vtex-rich-text-0-x-paragraph--text-prod-indisponivel', { timeout: 500 });
+                        prices.push('Produto indisponível no momento!');
+                    }
+                    if (await page.$('.giassi-apps-custom-1-x-priceUnit')) {
+                        await page.waitForSelector('.giassi-apps-custom-1-x-priceUnit', { timeout: 500 });
+                        const priceUnit = await page.$eval('.giassi-apps-custom-1-x-priceUnit', el => el.innerText);
+                        prices.push(priceUnit);
+                    }
+                    if (await page.$('.giassi-apps-custom-1-x-priceTotalUnita')) {
+                        await page.waitForSelector('.giassi-apps-custom-1-x-priceTotalUnita', { timeout: 500 });
+                        const priceTotalUnita = await page.$eval('.giassi-apps-custom-1-x-priceTotalUnita', el => el.innerText);
+                        prices.push(priceTotalUnita);
+                    }
             
+                    await page.waitForSelector('.vtex-store-components-3-x-content div[style="display:contents"]');
+
                     const price = prices.length > 0 ? prices.join(" | ") : "Preço não encontrado";
+                    const desc = await page.$eval(
+                        '.vtex-store-components-3-x-content div[style="display:contents"]',
+                        el => el.innerText.trim()
+                    );  
+                    const link = element;      
+                    
+                    var t = (title).split(' ');
+                    nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
+
+                    array.push({ title, price, desc, link });
             
-                    array.push({ title, price });
-            
-                    await page.screenshot({ path: `imagem_item_${array.length}.png` });
+                    await page.screenshot({ path: `imagem_${(nome_item).toLowerCase()}.png` });
                 } catch (error) {
                     console.error(`Erro ao processar o link ${element}:`, error.message);
                 }
@@ -154,8 +192,6 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             await browser.close();
             break;
     }
-
-    console.log(array)
 
     return await array;
 }
@@ -191,8 +227,8 @@ const fatimaesportes =  'https://www.fatimaesportes.com.br/';
 const centauro =  'https://www.centauro.com.br/';
 const netshoes =  'https://www.netshoes.com.br/';
 
-
-
-const url = giassi;
-
-console.log(getPrecosProdutosPac(url, 'peru', 3));
+getPrecosProdutosPac(giassi, 'peru', 3).then(retorno => {
+    console.log(retorno);
+}).catch(error => {
+    console.error("Erro ao obter os preços:", error);
+});
