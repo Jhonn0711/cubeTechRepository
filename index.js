@@ -56,8 +56,6 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 page.waitForSelector('.ui-search-layout--stack'),
             ]);
 
-            console.log('links');
-
             var links = await page.$$eval('.poly-component__title a', elements =>
                 elements.slice(0, 10).map(link => link.href)
             );
@@ -101,45 +99,75 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             }
 
             break;
-
-        //angeloni
+        
+        //magazine luiza
         case 2:
-            // await page.waitForSelector('#downshift-0-input');
-            // await page.type('#downshift-0-input', searchItem);
+            await page.waitForSelector('.kdZZLA');
+            await page.type('.kdZZLA', searchItem);
 
-            // await Promise.all([
-            //     page.waitForNavigation(),
-            //     // page.waitForSelector('a.vtex-product-summary-2-x-clearLink--shelf-product'),
-            //     page.click('.vtex-store-components-3-x-searchBarIcon--header-options-bottom-search'),
-            // ]);
+            await Promise.all([
+                page.waitForNavigation(),
+                page.waitForSelector('.egXHvj'), 
+                page.click('.egXHvj'),
+                page.click('.khCmGO'),
+                page.waitForSelector('ul.gjtbTZ'), 
+            ]);
 
-            // // await page.waitForSelector('.vtex-product-summary-2-x-clearLink--shelf-product', { timeout: 500 });
+            var links = await page.$$eval('ul.gjtbTZ a.eXlKzg', elements => elements.slice(0, 10).map(link => link.href));
 
-            // var links = await page.$$eval(
-            //     '.vtex-search-result-3-x-gallery div a.vtex-product-summary-2-x-clearLink--shelf-product'/* , 
-            //     elements => elements.map(link => link.href) */
-            // );
+            for(element of links){
+                await page.goto(element);
 
-            // if (links.length === 0) {
-            //     console.log("Nenhum link encontrado. Verifique o seletor ou o estado da página.");
-            // } else {
-            //     console.log(links);
-            // }
+                try{
 
-            // break;
-            // for (const element of links) {
-            //     try{
+                    let prices = [];
 
-            //         await page.goto(element);            
-                
-            //     } catch (error) {
-            //         console.error(`Erro ao processar o link ${element}:`, error.message);
-            //     }
-            // }
-            
+                    if (await page.$('[data-testid="price-original"]')) {
+                        await page.waitForSelector('[data-testid="price-original"]', { timeout: 500 });
+                        const priceOriginal = await page.$eval('[data-testid="price-original"]', el => el.innerText.trim());
+                        prices.push('Valor original: ' + priceOriginal);
+                    }
+
+                    if (await page.$('[data-testid="price-value"]')) {
+                        await page.waitForSelector('[data-testid="price-value"]', { timeout: 500 });
+                        const priceValue = await page.$eval('[data-testid="price-value"]', el => el.innerText.trim());
+                        prices.push('Valor à vista: ' + priceValue);
+                    }
+
+                    if (await page.$('[data-testid="installment"]')) {
+                        await page.waitForSelector('[data-testid="installment"]', { timeout: 500 });
+                        const installment = await page.$eval('[data-testid="installment"]', el => el.innerText.trim());
+                        prices.push('Parcelamento: ' + installment);
+                    }
+
+                    if (await page.$('.vtex-rich-text-0-x-paragraph--text-prod-indisponivel')) {
+                        await page.waitForSelector('.vtex-rich-text-0-x-paragraph--text-prod-indisponivel', { timeout: 500 });
+                        prices.push('Produto indisponível no momento!');
+                    }
+
+                    let title = await page.$eval('.jjGTqv', el => el.innerText);
+                    let price = prices.length > 0 ? prices.join(" | ") : "Preço não encontrado";
+                    let desc = description = await page.$eval('[data-testid="product-detail-description"]', el => el.innerText.trim());
+                    let link = element;
+                    let site = url;
+
+                    array.push({ title, price, desc, link, site });
+
+                    var titleSemBarra = title.replace(/\//g, '_');
+                    var t = titleSemBarra.split(' ');
+                    nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+
+                    await page.screenshot({ path: `magazineluiza_${(nome_item).toLowerCase()}.png` });
+
+                }catch(error){
+                    console.error(error);
+                }
+            }
+
             break;
 
-
+        //giassi
         case 3:
             await page.waitForSelector('#downshift-1-input');
             await page.type('#downshift-1-input', searchItem);
@@ -227,33 +255,134 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                     console.error(`Erro ao processar o link ${element}:`, error.message);
                 }
             }
-            
+
             break;
         
-        //bistek
         case 4:
-            await page.waitForSelector('#avantivtexio-multi-items-search-1-x-searchBar--search-custom');
-            await page.type('#avantivtexio-multi-items-search-1-x-searchBar--search-custom', searchItem);
+            await page.waitForSelector('input#txtBuscaProd');
+            await page.type('input#txtBuscaProd', searchItem);
+            
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('.componentheader__icon--search'),
+                page.waitForSelector('div#div_box_produtos_1'),
+            ]);
+
+            var links = await page.$$eval('div#div_box_produtos_1 a.blocoproduto__link', elements => elements.splice(1, 10).map(link => link.href));
+
+            for (element of links){
+                await page.goto(element);
+
+                await page.waitForSelector('#h5produtoDescricao', { timeout: 5000 });
+                const prices = [];
+
+                if (await page.$('#precovista')) {
+                    await page.waitForSelector('#precovista', { timeout: 500 });
+                    const priceVista = await page.$eval('#precovista', el => el.innerText);
+                    prices.push(priceVista.trim());
+                }
+
+                if (await page.$('#precovenda')) {
+                    await page.waitForSelector('#precovenda', { timeout: 500 });
+                    const priceVista = await page.$eval('#precovenda', el => el.innerText);
+                    prices.push(priceVista.trim());
+                }
+
+                if (await page.$('#total_prazo')) {
+                    await page.waitForSelector('#total_prazo', { timeout: 500 });
+                    const pricePrazo = await page.$eval('#total_prazo', el => el.innerText);
+                    prices.push(pricePrazo.trim());
+                }
+
+                if (await page.$('#depor')) {
+                    await page.waitForSelector('#depor', { timeout: 500 });
+                    const priceOriginal = await page.$eval('#depor', el => el.innerText);
+                    prices.push(priceOriginal.trim());
+                }
+
+                if (await page.$('#economize')) {
+                    await page.waitForSelector('#economize', { timeout: 500 });
+                    const discountInfo = await page.$eval('#economize', el => el.innerText);
+                    prices.push('Desconto: ' + discountInfo.trim());
+                }
+
+                let title = await page.$eval('#h5produtoDescricao', el => el.innerText);
+                let price = prices.length > 0 ? prices.join(" | ") : "Preço não encontrado";
+                let desc = await page.$eval('#descricaoPadrao', el => {
+                    let paragraphs = el.querySelectorAll('p');
+                    let textContent = [];
+                    for (let p of paragraphs) {
+                        textContent.push(p.innerText.trim());
+                        if (p.nextElementSibling && p.nextElementSibling.tagName === 'HR') {
+                            break;
+                        }
+                    }
+                    return textContent.join(' ');
+                });
+                let link = element;
+                let site = url;
+
+                array.push({ title, price, desc, link, site });
+                
+                var t = title.split(' ');
+                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+                await page.screenshot({ path: `kalunga_${(nome_item).toLowerCase()}.png` });
+            }
+            break;
+        
+        case 5:
+            await page.waitForSelector('[data-cy="inp-header-input"]');
+            await page.type('[data-cy="inp-header-input"]', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('[data-cy="btn-header-search"]'),
+                page.waitForSelector('ul.product-list'),
+            ]);
+
+            var links = await page.$$eval('ul.product-list a[data-cy="acr-redirecionar-para-produto"]', elements => elements.slice(1,10).map(link => link.href));
+            
+            for (element of links){
+                await page.goto(element);
+
+                let title = await page.$eval('.kaChaL h1', el => el.innerText);
+                page.waitForSelector('div.to-price')
+                let price = await page.$eval('div.to-price', (el) => {
+                    // Extrair os valores
+                    const symbol = el.querySelector('.money-symbol') ? el.querySelector('.money-symbol').textContent.trim() : '';
+                    const price = el.querySelector('.price') ? el.querySelector('.price').textContent.trim() : '';
+                    
+                
+                    return `${symbol} ${price}`.trim();
+                });
+
+                let desc = await page.$eval('#product-description .product-text', el => el.innerText);
+
+                array.push({ title, price, desc});
+            }
+
+            break;
     }
-    await browser.close();
+    // await browser.close();
     return await array;
 }
 
 
 
-const mercadolivre = 'https://www.mercadolivre.com.br';
-const angeloni = 'https://www.angeloni.com.br/eletro/';
-const giassi =  'https://www.giassi.com.br/';
-const bistek =  'https://www.bistek.com.br/';
-const americanas =  'https://www.americanas.com.br/';
-const magazineluiza = 'https://www.magazineluiza.com.br/';
-const casasbahia =  'https://www.casasbahia.com.br/';
-const kalunga =  'https://www.kalunga.com.br/';
-const correaback =  'https://www.correaback.com.br/';
-const madeiramadeira =  'https://www.madeiramadeira.com.br/';
-const mobly =  'https://www.mobly.com.br/';
-const leroymerlin =  'https://www.leroymerlin.com.br/';
-const colombo =  'https://www.colombo.com.br/';
+const mercadolivre = 'https://www.mercadolivre.com.br'; //TODO: deu certo
+const angeloni = 'https://www.angeloni.com.br/eletro/'; //NUM deu
+const giassi =  'https://www.giassi.com.br/';   //TODO: deu certo
+const bistek =  'https://www.bistek.com.br/';   //NUM deu
+const americanas =  'https://www.americanas.com.br/';   //NUM deu
+const magazineluiza = 'https://www.magazineluiza.com.br/';  //TODO: deu certo
+const casasbahia =  'https://www.casasbahia.com.br/'; //NUM deu
+const kalunga =  'https://www.kalunga.com.br/'; //TODO: deu certo
+const correaback =  'https://www.correaback.com.br/'; //sem barra de pesquisa
+const madeiramadeira =  'https://www.madeiramadeira.com.br/'; //ID ALEATORIO EM DIVS E INPUTS
+const mobly =  'https://www.mobly.com.br/'; //dificuldades de conseguir os preços, devido a algum problema em classes
+const leroymerlin =  'https://www.leroymerlin.com.br/'; //NUM deu
+const colombo =  'https://www.colombo.com.br/';//TODO: em andamento
 const koerich = 'https://www.koerich.com.br/';
 const casasdaagua =  'https://www.casasdaagua.com.br/';
 const cassol =  'https://www.cassol.com.br/';
@@ -271,8 +400,7 @@ const centauro =  'https://www.centauro.com.br/';
 const netshoes =  'https://www.netshoes.com.br/';
 
 (async ()=>{
-
-    var item = await readlineSync.question('Qual item vc deseja buscar?');
-    var teste = await getPrecosProdutosPac(bistek, item, 4);
+    // var item = await readlineSync.question('Qual item vc deseja buscar?');
+    var teste = await getPrecosProdutosPac(colombo, 'ventilador', 5);
     console.log(teste);
 })()
