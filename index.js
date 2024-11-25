@@ -345,22 +345,68 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             
             for (element of links){
                 await page.goto(element);
-
                 let title = await page.$eval('.kaChaL h1', el => el.innerText);
+
                 page.waitForSelector('div.to-price')
                 let price = await page.$eval('div.to-price', (el) => {
-                    // Extrair os valores
                     const symbol = el.querySelector('.money-symbol') ? el.querySelector('.money-symbol').textContent.trim() : '';
                     const price = el.querySelector('.price') ? el.querySelector('.price').textContent.trim() : '';
                     
-                
                     return `${symbol} ${price}`.trim();
                 });
 
                 let desc = await page.$eval('#product-description .product-text', el => el.innerText);
+                let link = element;
+                let site = url;
 
-                array.push({ title, price, desc});
+                array.push({ title, price, desc, link, site });
+
+                var t = title.split(' ');
+                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+                await page.screenshot({ path: `colombo_${(nome_item).toLowerCase()}.png` });
             }
+
+            break;
+
+        case 6:
+            await page.waitForSelector('.search-input');
+            await page.type('.search-input', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('button.search-button'),
+                page.waitForSelector('section.products'),
+            ]);
+
+            var links = await page.$$eval('section.products a[href*="4672101"]', elements => 
+                elements.map(link => link.href)
+            );
+
+            console.log(links)
+            // for (element of links){
+            //     await page.goto(element);
+            //     let title = await page.$eval('.kaChaL h1', el => el.innerText);
+
+            //     page.waitForSelector('div.to-price')
+            //     let price = await page.$eval('div.to-price', (el) => {
+            //         const symbol = el.querySelector('.money-symbol') ? el.querySelector('.money-symbol').textContent.trim() : '';
+            //         const price = el.querySelector('.price') ? el.querySelector('.price').textContent.trim() : '';
+                    
+            //         return `${symbol} ${price}`.trim();
+            //     });
+
+            //     let desc = await page.$eval('#product-description .product-text', el => el.innerText);
+            //     let link = element;
+            //     let site = url;
+
+            //     array.push({ title, price, desc, link, site });
+
+            //     var t = title.split(' ');
+            //     nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+            //     await page.screenshot({ path: `colombo_${(nome_item).toLowerCase()}.png` });
+            // }
 
             break;
     }
@@ -382,8 +428,8 @@ const correaback =  'https://www.correaback.com.br/'; //sem barra de pesquisa
 const madeiramadeira =  'https://www.madeiramadeira.com.br/'; //ID ALEATORIO EM DIVS E INPUTS
 const mobly =  'https://www.mobly.com.br/'; //dificuldades de conseguir os preços, devido a algum problema em classes
 const leroymerlin =  'https://www.leroymerlin.com.br/'; //NUM deu
-const colombo =  'https://www.colombo.com.br/';//TODO: em andamento
-const koerich = 'https://www.koerich.com.br/';
+const colombo =  'https://www.colombo.com.br/';//TODO: deu certo
+const koerich = 'https://www.koerich.com.br/'; //TODO: em andamento
 const casasdaagua =  'https://www.casasdaagua.com.br/';
 const cassol =  'https://www.cassol.com.br/';
 const queroquero =  'https://www.queroquero.com.br/';
@@ -401,6 +447,6 @@ const netshoes =  'https://www.netshoes.com.br/';
 
 (async ()=>{
     // var item = await readlineSync.question('Qual item vc deseja buscar?');
-    var teste = await getPrecosProdutosPac(colombo, 'ventilador', 5);
+    var teste = await getPrecosProdutosPac(koerich, 'celular samsung', 6);
     console.log(teste);
 })()
