@@ -91,6 +91,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 desc = desc.slice(0,500);
                 let link = element;
                 let site = url;
+                let sitesDisponivel = [];
                 var t = (title).split(' ');
                 nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
                 
@@ -150,6 +151,8 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                     let desc = description = await page.$eval('[data-testid="product-detail-description"]', el => el.innerText.trim());
                     let link = element;
                     let site = url;
+                    let sitesDisponivel = [];
+
 
                     array.push({ title, price, desc, link, site });
 
@@ -247,6 +250,8 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                     var t = (title).split(' ');
                     nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
                     var site = url;
+                    let sitesDisponivel = [];
+
 
                     array.push({ title, price, desc, link, site });
             
@@ -321,6 +326,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 });
                 let link = element;
                 let site = url;
+                let sitesDisponivel = [];
 
                 array.push({ title, price, desc, link, site });
                 
@@ -358,6 +364,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 let desc = await page.$eval('#product-description .product-text', el => el.innerText);
                 let link = element;
                 let site = url;
+                let sitesDisponivel = [];
 
                 array.push({ title, price, desc, link, site });
 
@@ -370,46 +377,143 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             break;
 
         case 6:
-            await page.waitForSelector('.search-input');
-            await page.type('.search-input', searchItem);
+            await page.waitForSelector('.AutoCompleteStyle_input__WAC2Y');
+            await page.type('.AutoCompleteStyle_input__WAC2Y', searchItem);
 
             await Promise.all([
                 page.waitForNavigation(),
-                page.click('button.search-button'),
-                page.waitForSelector('section.products'),
+                page.click('div.AutoCompleteStyle_SearchIconWrapper__lU22r'),
+                page.click('.PrivacyPolicy_ButtonLabel__auVE2'),
+                page.waitForSelector('.Hits_Wrapper__iA3rM'),
             ]);
 
-            var links = await page.$$eval('section.products a[href*="4672101"]', elements => 
-                elements.map(link => link.href)
+            var links = await page.$$eval('div.Hits_Wrapper__iA3rM a.ProductCard_ProductCard_Inner__gapsh', elements => 
+                elements.splice(1,10).map(link => link.href)
+            );
+            links = links.filter(link => !link.includes('.bondfaro.com.br/lead'));
+
+            for (element of links){
+                await page.goto(element);
+                
+                await page.waitForSelector('.Text_MobileTitleLAtLarge__dHS_M');
+                let title = await page.$eval('.Text_MobileTitleLAtLarge__dHS_M', el => el.innerText);
+                page.waitForSelector('strong.Text_DesktopHeadingM__4_pVt');
+                let price = await page.$eval('strong.Text_DesktopHeadingM__4_pVt', el => el.innerText);
+
+                let desc = title;
+                let link = element;
+                let site = await page.$$eval('.OfferImage_ImageWrapper__zHwzm', (links) => {
+                    return links.splice(1,5).map(link => link.href);
+                });
+
+                array.push({ title, price, desc, link, site });
+                
+                var t = title.split(' ');
+                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+                await page.screenshot({ path: `bondfaro_${(nome_item).toLowerCase()}.png` });
+            }
+
+            break;
+
+        case 7: 
+            await page.waitForSelector('#buscaCentral');
+            await page.type('#buscaCentral', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('#buscarButtonMobile'),
+                page.click('.aceitar-termos-politica'),
+                page.waitForSelector('div#produtos'),
+            ]);
+
+            var links = await page.$$eval('#produtos article .coluna2horizontal a', (links) => {
+                return links.map(link => link.href);
+            });
+
+            for(element of links){
+                await page.goto(element);
+                await page.waitForSelector('div#container_topo_produto h1[itemprop="name"]');
+                let title = await page.$eval('div#container_topo_produto h1[itemprop="name"]', el=>el.innerText);
+                let price = await page.$eval('strong.laranja_padrao', el=>el.innerText);
+                
+                let desc = await page.$eval('#descricao', el=>el.innerText);
+                let link = element;
+
+                let site = await page.$$eval('.link_titulo_produto', (links) => {
+                    return links.map(link => link.href);
+                });
+
+                array.push({ title, price, desc, link, site });
+
+                var t = title.split(' ');
+                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+                await page.screenshot({ path: `jacotei_${(nome_item).toLowerCase()}.png` });
+            }
+
+            break;
+
+        case 8: 
+            await page.waitForSelector('.search-bar__field');
+            await page.type('.search-bar__field', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('button.search-bar__button'),
+                // page.click('.aceitar-termos-politica'),
+                page.waitForSelector('div.cards'),
+            ]);
+
+            var links = await page.$$eval('div.card-image a', (anchors) => {
+                return anchors.map(anchor => anchor.href).filter(href => href).slice(0, 10);
+            });
+            
+            for(element of links){
+                await page.goto(element);
+
+                await page.waitForSelector('.offer-info-title');
+                let title = await page.$eval('.offer-info-title', el=>el.innerText);
+                let price = await page.$eval('.offer-info-content__actions--price', el=>el.innerText);
+                let desc = title;
+                let link = element;
+
+                let site = await page.$eval('a.offer-info-content__actions--final-link', (anchor) => {
+                    return anchor.href;
+                });
+
+                array.push({ title, price, desc, link, site });
+            }
+
+            break;
+
+        case 9:
+            await page.waitForSelector('.search-bar__input');
+            await page.type('.search-bar__input', searchItem);
+
+            await Promise.all([
+                page.waitForNavigation(),
+                page.click('button.search-bar__submit'),
+                // page.click('.aceitar-termos-politica'),
+                page.waitForSelector('div.product-list--collection'),
+            ]);
+
+            var links = await page.$$eval('div.product-list--collection a.product-item__image-wrapper',  elements => 
+                elements.slice(1,10).map(link => link.href)
             );
 
-            console.log(links)
-            // for (element of links){
-            //     await page.goto(element);
-            //     let title = await page.$eval('.kaChaL h1', el => el.innerText);
+            for(element of links){
+                await page.goto(element);
 
-            //     page.waitForSelector('div.to-price')
-            //     let price = await page.$eval('div.to-price', (el) => {
-            //         const symbol = el.querySelector('.money-symbol') ? el.querySelector('.money-symbol').textContent.trim() : '';
-            //         const price = el.querySelector('.price') ? el.querySelector('.price').textContent.trim() : '';
-                    
-            //         return `${symbol} ${price}`.trim();
-            //     });
-
-            //     let desc = await page.$eval('#product-description .product-text', el => el.innerText);
-            //     let link = element;
-            //     let site = url;
-
-            //     array.push({ title, price, desc, link, site });
-
-            //     var t = title.split(' ');
-            //     nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
-
-            //     await page.screenshot({ path: `colombo_${(nome_item).toLowerCase()}.png` });
-            // }
+                let title = await page.$eval('h1.product-meta__title', el=>el.innerText);
+                
+                console.log(title);
+            }
 
             break;
     }
+
+
     // await browser.close();
     return await array;
 }
@@ -417,19 +521,17 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
 
 const mercadolivre = 'https://www.mercadolivre.com.br'; //TODO: deu certo
-const angeloni = 'https://www.angeloni.com.br/eletro/'; //NUM deu
 const giassi =  'https://www.giassi.com.br/';   //TODO: deu certo
-const bistek =  'https://www.bistek.com.br/';   //NUM deu
-const americanas =  'https://www.americanas.com.br/';   //NUM deu
 const magazineluiza = 'https://www.magazineluiza.com.br/';  //TODO: deu certo
-const casasbahia =  'https://www.casasbahia.com.br/'; //NUM deu
 const kalunga =  'https://www.kalunga.com.br/'; //TODO: deu certo
-const correaback =  'https://www.correaback.com.br/'; //sem barra de pesquisa
-const madeiramadeira =  'https://www.madeiramadeira.com.br/'; //ID ALEATORIO EM DIVS E INPUTS
-const mobly =  'https://www.mobly.com.br/'; //dificuldades de conseguir os preços, devido a algum problema em classes
-const leroymerlin =  'https://www.leroymerlin.com.br/'; //NUM deu
 const colombo =  'https://www.colombo.com.br/';//TODO: deu certo
-const koerich = 'https://www.koerich.com.br/'; //TODO: em andamento
+const bondfaro = 'https://www.bondfaro.com.br'; //TODO: deu certo
+const jacotei = 'https://www.jacotei.com.br'; //TODO: deu certo
+const ofertaesperta = 'https://www.ofertaesperta.com'; //TODO: deu certo
+const ofertacertaonline = 'https://ofertacertaonline.com'; //TODO: em andamento
+
+//-------------------------------------------------------------------
+
 const casasdaagua =  'https://www.casasdaagua.com.br/';
 const cassol =  'https://www.cassol.com.br/';
 const queroquero =  'https://www.queroquero.com.br/';
@@ -444,9 +546,18 @@ const fatimacrianca =  'https://www.fatimacrianca.com.br/';
 const fatimaesportes =  'https://www.fatimaesportes.com.br/';
 const centauro =  'https://www.centauro.com.br/';
 const netshoes =  'https://www.netshoes.com.br/';
+const angeloni = 'https://www.angeloni.com.br/eletro/'; //NUM deu
+const bistek =  'https://www.bistek.com.br/';   //NUM deu
+const americanas =  'https://www.americanas.com.br/';   //NUM deu
+const casasbahia =  'https://www.casasbahia.com.br/'; //NUM deu
+const correaback =  'https://www.correaback.com.br/'; //sem barra de pesquisa
+const madeiramadeira =  'https://www.madeiramadeira.com.br/'; //ID ALEATORIO EM DIVS E INPUTS
+const mobly =  'https://www.mobly.com.br/'; //dificuldades de conseguir os preços, devido a algum problema em classes
+const leroymerlin =  'https://www.leroymerlin.com.br/'; //NUM deu
+const koerich = 'https://www.koerich.com.br/'; //Num deu
 
 (async ()=>{
     // var item = await readlineSync.question('Qual item vc deseja buscar?');
-    var teste = await getPrecosProdutosPac(koerich, 'celular samsung', 6);
+    var teste = await getPrecosProdutosPac(ofertacertaonline, 'fone de ouvidos', 9);
     console.log(teste);
-})()
+})();
