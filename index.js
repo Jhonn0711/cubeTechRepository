@@ -461,7 +461,6 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             await Promise.all([
                 page.waitForNavigation(),
                 page.click('button.search-bar__button'),
-                // page.click('.aceitar-termos-politica'),
                 page.waitForSelector('div.cards'),
             ]);
 
@@ -483,6 +482,11 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 });
 
                 array.push({ title, price, desc, link, site });
+
+                var t = title.split(' ');
+                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+                await page.screenshot({ path: `ofertaesperta_${(nome_item).toLowerCase()}.png` });
             }
 
             break;
@@ -504,13 +508,24 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
             for(element of links){
                 await page.goto(element);
+                await page.waitForSelector('.price');
+                await page.waitForSelector('h1.product-meta__title');
 
                 let title = await page.$eval('h1.product-meta__title', el=>el.innerText);
-                
-                console.log(title);
-            }
+                let price = await page.$eval('.price', el=>el.innerText);
+                let desc = await page.$eval('.text--pull', el=>el.innerText);
+                let link = element;
+                let site = element;
 
+                array.push({ title, price, desc, link, site });
+
+                var t = title.split(' ');
+                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+
+                await page.screenshot({ path: `ofertacertaonline_${(nome_item).toLowerCase()}.png` });
+            }
             break;
+
     }
 
 
@@ -518,17 +533,23 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
     return await array;
 }
 
+//CATEGORIAS::
+
+//Alimentos e Bebidas:
 
 
-const mercadolivre = 'https://www.mercadolivre.com.br'; //TODO: deu certo
-const giassi =  'https://www.giassi.com.br/';   //TODO: deu certo
-const magazineluiza = 'https://www.magazineluiza.com.br/';  //TODO: deu certo
-const kalunga =  'https://www.kalunga.com.br/'; //TODO: deu certo
-const colombo =  'https://www.colombo.com.br/';//TODO: deu certo
-const bondfaro = 'https://www.bondfaro.com.br'; //TODO: deu certo
-const jacotei = 'https://www.jacotei.com.br'; //TODO: deu certo
-const ofertaesperta = 'https://www.ofertaesperta.com'; //TODO: deu certo
-const ofertacertaonline = 'https://ofertacertaonline.com'; //TODO: em andamento
+//-------------------------------------------------------------------
+
+
+const mercadolivre = 'https://www.mercadolivre.com.br'; //1
+const giassi =  'https://www.giassi.com.br/';   //2
+const magazineluiza = 'https://www.magazineluiza.com.br/';  //3
+const kalunga =  'https://www.kalunga.com.br/'; //4
+const colombo =  'https://www.colombo.com.br/';//5
+const bondfaro = 'https://www.bondfaro.com.br'; //6
+const jacotei = 'https://www.jacotei.com.br'; //7
+const ofertaesperta = 'https://www.ofertaesperta.com'; //8
+const ofertacertaonline = 'https://ofertacertaonline.com'; //9
 
 //-------------------------------------------------------------------
 
