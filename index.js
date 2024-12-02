@@ -1,35 +1,6 @@
 const { get } = require('http');
 const readlineSync = require('readline-sync');
 const puppeteer = require('puppeteer');
-    
-async function bot(){
-    const browser = await puppeteer.launch({headless: true}); // .launch abre o browser; headless: true para não exibir o navegador em tela e false para exibir o processo;
-    const page = await browser.newPage(); //abre uma nova página;
-    await page.goto('https://exemple.com'); //a página que vai abrir é 'https://exemple.com'; 
-    await page.screenshot({path: 'exemplo.png'}); // printa a pagina web que foi aberta;
-
-    await browser.close(); // close para evitar vários navegadores/abas de navegador;
-}
-
-async function getMoneyConvert(){ //busca a moeda desejada pelo usuário;
-    const coinBase = readlineSync.question('Qual a moeda base para conversão?') || 'dolar';
-    const convertCoin = readlineSync.question('Qual a moeda desejada?') || 'real';
-
-    const url = `https://www.google.com/search?client=opera-gx&q=${coinBase}+para+${convertCoin}&sourceid=opera&ie=UTF-8&oe=UTF-8s`;
-
-    const browser = await puppeteer.launch({headless: false});
-    const page = await browser.newPage();
-    await page.goto(url);
-
-    
-    const result = await page.evaluate(() =>{
-        return document.querySelector('.lWzCpb.a61j6').value;
-    }); 
-    
-    console.log(`O valor de 1 ${coinBase} é equivalente a ${result} ${convertCoin}`)
-    
-    return;
-}
 
 async function getPrecosProdutosPac(url, searchItem, urlVal){
 
@@ -44,7 +15,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
     });
     
     switch(urlVal){
-        //mercado livre
+        //mercado livre funciona
         case 1:
             await page.waitForSelector('#cb1-edit');
 
@@ -53,7 +24,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             await Promise.all([
                 page.waitForNavigation(),
                 page.click('.nav-search-btn'),
-                page.waitForSelector('.ui-search-layout--stack'),
+                page.waitForSelector('.ui-search-layout--grid'),
             ]);
 
             var links = await page.$$eval('.poly-component__title a', elements =>
@@ -87,12 +58,18 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
                 let title = await page.$eval('.ui-pdp-title', element => element.innerText);
                 let price = prices.length > 0 ? prices.join("") : "Preço não encontrado";
-                let desc = await page.$eval('.ui-pdp-description__content', el => el.innerText);
-                desc = desc.slice(0,500);
+                let desc = title;
+
+                if (await page.$('.ui-pdp-description__content') != undefined) {
+                    let desc = await page.$eval('.ui-pdp-description__content', el => el.innerText);
+                    desc = desc.slice(0,500);
+                }
+                
                 let link = element;
                 let site = url;
-                let sitesDisponivel = [];
-                var t = (title).split(' ');
+
+                var titleSemBarra = title.replace(/\//g, '_');
+                var t = titleSemBarra.split(' ');
                 nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
                 
                 array.push({ title, price, desc, link, site });
@@ -101,7 +78,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
             break;
         
-        //magazine luiza
+        //magazine luiza funciona
         case 2:
             await page.waitForSelector('.kdZZLA');
             await page.type('.kdZZLA', searchItem);
@@ -151,7 +128,6 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                     let desc = description = await page.$eval('[data-testid="product-detail-description"]', el => el.innerText.trim());
                     let link = element;
                     let site = url;
-                    let sitesDisponivel = [];
 
 
                     array.push({ title, price, desc, link, site });
@@ -172,17 +148,39 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
         //giassi
         case 3:
-            await page.waitForSelector('#downshift-1-input');
-            await page.type('#downshift-1-input', searchItem);
+
+            setTimeout(async () => {
+                const selectors = [
+                    '#downshift-0-input',
+                    '#downshift-1-input',
+                    '#downshift-2-input',
+                    '#downshift-3-input',
+                ];
+                
+                let found = false;
+                
+                for (const selector of selectors) {
+                    const element = await page.$(selector);
+                    if (element) {
+                        await page.focus(selector);
+                        await page.type(selector, searchItem, { delay: 100 });
+                        found = true;
+                        break;
+                    }
+                }
+            
+                if (found) {
+                    await page.keyboard.press('Enter');
+                }
+            },3000);
             
             await Promise.all([
                 page.waitForNavigation(),
-                page.click('.vtex-store-components-3-x-searchBarIcon'),
                 page.click('#cookiescript_accept'),
                 page.waitForSelector('div#gallery-layout-container'),
             ]);
 
-            var links = await page.$$eval('div#gallery-layout-container a.vtex-product-summary-2-x-clearLink', elements => elements.map(link => link.href));      
+            var links = await page.$$eval('div#gallery-layout-container a.vtex-product-summary-2-x-clearLink', elements => elements.splice(1,10).map(link => link.href));      
 
             for (const element of links) {
                 await page.goto(element);
@@ -247,15 +245,15 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                         el => el.innerText.trim()
                     );  
                     const link = element;      
-                    var t = (title).split(' ');
-                    nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
                     var site = url;
-                    let sitesDisponivel = [];
-
+                    
+                    var titleSemBarra = title.replace(/\//g, '_');
+                    var t = titleSemBarra.split(' ');
+                    nome_item = t[0]+'_'+t[1]+'_'+t[2]+'_'+t[3]+'_'+t[4];
 
                     array.push({ title, price, desc, link, site });
             
-                    await page.screenshot({ path: `imagem_${(nome_item).toLowerCase()}.png` });
+                    await page.screenshot({ path: `giassi_${(nome_item).toLowerCase()}.png` });
                 } catch (error) {
                     console.error(`Erro ao processar o link ${element}:`, error.message);
                 }
@@ -330,13 +328,15 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
                 array.push({ title, price, desc, link, site });
                 
-                var t = title.split(' ');
+                var titleSemBarra = title.replace(/\//g, '_');
+                var t = titleSemBarra.split(' ');
                 nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
 
                 await page.screenshot({ path: `kalunga_${(nome_item).toLowerCase()}.png` });
             }
             break;
         
+        //colombo
         case 5:
             await page.waitForSelector('[data-cy="inp-header-input"]');
             await page.type('[data-cy="inp-header-input"]', searchItem);
@@ -344,31 +344,31 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
             await Promise.all([
                 page.waitForNavigation(),
                 page.click('[data-cy="btn-header-search"]'),
-                page.waitForSelector('ul.product-list'),
             ]);
 
+            if(await page.$('.style__TopTextStyled-sc-16m4cra-2')){
+                array = await page.$eval('.style__TopTextStyled-sc-16m4cra-2', el => el.innerText);
+                break;
+            }
+
+            await page.waitForSelector('ul.product-list');
             var links = await page.$$eval('ul.product-list a[data-cy="acr-redirecionar-para-produto"]', elements => elements.slice(1,10).map(link => link.href));
             
             for (element of links){
                 await page.goto(element);
                 let title = await page.$eval('.kaChaL h1', el => el.innerText);
 
-                page.waitForSelector('div.to-price')
-                let price = await page.$eval('div.to-price', (el) => {
-                    const symbol = el.querySelector('.money-symbol') ? el.querySelector('.money-symbol').textContent.trim() : '';
-                    const price = el.querySelector('.price') ? el.querySelector('.price').textContent.trim() : '';
-                    
-                    return `${symbol} ${price}`.trim();
-                });
+                await page.waitForSelector('div.price');
+                let price = await page.$eval('div.price', (el) => el.innerText);
 
                 let desc = await page.$eval('#product-description .product-text', el => el.innerText);
                 let link = element;
                 let site = url;
-                let sitesDisponivel = [];
 
                 array.push({ title, price, desc, link, site });
 
-                var t = title.split(' ');
+                var titleSemBarra = title.replace(/\//g, '_');
+                var t = titleSemBarra.split(' ');
                 nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
 
                 await page.screenshot({ path: `colombo_${(nome_item).toLowerCase()}.png` });
@@ -376,6 +376,7 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
             break;
 
+        //bondfaro
         case 6:
             await page.waitForSelector('.AutoCompleteStyle_input__WAC2Y');
             await page.type('.AutoCompleteStyle_input__WAC2Y', searchItem);
@@ -384,13 +385,19 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 page.waitForNavigation(),
                 page.click('div.AutoCompleteStyle_SearchIconWrapper__lU22r'),
                 page.click('.PrivacyPolicy_ButtonLabel__auVE2'),
-                page.waitForSelector('.Hits_Wrapper__iA3rM'),
+                page.waitForSelector('div.Hits_Wrapper__iA3rM'),
             ]);
 
-            var links = await page.$$eval('div.Hits_Wrapper__iA3rM a.ProductCard_ProductCard_Inner__gapsh', elements => 
+            var links = await page.$$eval('div.Hits_Wrapper__iA3rM .ProductCard_ProductCard_Inner__gapsh', elements => 
                 elements.splice(1,10).map(link => link.href)
-            );
+            );            
+
             links = links.filter(link => !link.includes('.bondfaro.com.br/lead'));
+
+            if(links.length == 0){
+                array = 'Item não encontrado';
+                break;
+            }
 
             for (element of links){
                 await page.goto(element);
@@ -406,16 +413,21 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                     return links.splice(1,5).map(link => link.href);
                 });
 
-                array.push({ title, price, desc, link, site });
-                
-                var t = title.split(' ');
-                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+                if(site.length > 0){
+                    array.push({ title, price, desc, link, site });
+                    
+                    var titleSemBarra = title.replace(/\//g, '_');
+                    var t = titleSemBarra.split(' ');
+                    nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+    
+                    await page.screenshot({ path: `bondfaro_${(nome_item).toLowerCase()}.png` });
+                }
 
-                await page.screenshot({ path: `bondfaro_${(nome_item).toLowerCase()}.png` });
             }
 
             break;
 
+        //jacotei
         case 7: 
             await page.waitForSelector('#buscaCentral');
             await page.type('#buscaCentral', searchItem);
@@ -427,12 +439,18 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 page.waitForSelector('div#produtos'),
             ]);
 
-            var links = await page.$$eval('#produtos article .coluna2horizontal a', (links) => {
-                return links.map(link => link.href);
+            var links = await page.$$eval('#produtos article', (articles) => {
+                return Array.from(articles)
+                    .filter((article) => !article.querySelector('button.compareLojas')) // Exclui os artigos com o botão
+                    .map((article) => {
+                        const link = article.querySelector('.coluna2horizontal a');
+                        return link ? link.href : null; // Retorna o href se existir
+                    })
+                    .filter((href) => href !== null); // Remove valores nulos
             });
 
             for(element of links){
-                await page.goto(element);
+                await page.goto(element, { waitUntil: 'domcontentloaded' });
                 await page.waitForSelector('div#container_topo_produto h1[itemprop="name"]');
                 let title = await page.$eval('div#container_topo_produto h1[itemprop="name"]', el=>el.innerText);
                 let price = await page.$eval('strong.laranja_padrao', el=>el.innerText);
@@ -444,16 +462,21 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                     return links.map(link => link.href);
                 });
 
-                array.push({ title, price, desc, link, site });
+                if(site.length > 0){
+                    array.push({ title, price, desc, link, site });
+    
+                    var titleSemBarra = title.replace(/\//g, '_');
+                    var t = titleSemBarra.split(' ');
+                    nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
+    
+                    await page.screenshot({ path: `jacotei_${(nome_item).toLowerCase()}.png` });    
+                }
 
-                var t = title.split(' ');
-                nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
-
-                await page.screenshot({ path: `jacotei_${(nome_item).toLowerCase()}.png` });
             }
 
             break;
 
+        //ofertaesperta
         case 8: 
             await page.waitForSelector('.search-bar__field');
             await page.type('.search-bar__field', searchItem);
@@ -483,14 +506,16 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
                 array.push({ title, price, desc, link, site });
 
-                var t = title.split(' ');
+                var titleSemBarra = title.replace(/\//g, '_');
+                var t = titleSemBarra.split(' ');
                 nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
 
                 await page.screenshot({ path: `ofertaesperta_${(nome_item).toLowerCase()}.png` });
             }
 
             break;
-
+            
+        //ofertacertaonline
         case 9:
             await page.waitForSelector('.search-bar__input');
             await page.type('.search-bar__input', searchItem);
@@ -499,13 +524,21 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
                 page.waitForNavigation(),
                 page.click('button.search-bar__submit'),
                 // page.click('.aceitar-termos-politica'),
-                page.waitForSelector('div.product-list--collection'),
+                // page.waitForSelector('div.product-list--collection'),
             ]);
 
+            if(await page.$('.empty-state__description')){
+                array = await page.$eval('.empty-state__description', el=>el.innerText);
+                break;
+            }   
+
+            page.waitForSelector('div.product-list--collection')
             var links = await page.$$eval('div.product-list--collection a.product-item__image-wrapper',  elements => 
                 elements.slice(1,10).map(link => link.href)
             );
 
+
+            
             for(element of links){
                 await page.goto(element);
                 await page.waitForSelector('.price');
@@ -519,31 +552,127 @@ async function getPrecosProdutosPac(url, searchItem, urlVal){
 
                 array.push({ title, price, desc, link, site });
 
-                var t = title.split(' ');
+                var titleSemBarra = title.replace(/\//g, '_');
+                var t = titleSemBarra.split(' ');
                 nome_item = t[0] + '_' + t[1] + '_' + t[2] + '_' + t[3] + '_' + t[4];
 
                 await page.screenshot({ path: `ofertacertaonline_${(nome_item).toLowerCase()}.png` });
             }
+
             break;
 
     }
 
 
-    // await browser.close();
+    await browser.close();
     return await array;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //CATEGORIAS::
 
 //Alimentos e Bebidas:
+/* 
+    mercadolivre 
+    magazineluiza
+    giassi
+*/
 
+//-------------------------------------------------------------------
+
+//Material limpeza:
+/* 
+    mercadolivre
+    magazineluiza
+    giassi
+    bondfaro
+    ofertaesperta
+*/
+
+//-------------------------------------------------------------------
+
+//Mobiliário
+/* 
+    mercadolivre
+    magazineluiza
+    bondfaro
+    jacotei
+*/
+
+//-------------------------------------------------------------------
+
+//Equipamentos de Informática:
+/* 
+    mercadolivre
+    magazineluiza
+    colombo
+    bondfaro
+    jacotei
+    ofertaesperta
+*/
+
+//-------------------------------------------------------------------
+
+//Vestuário e Calçados
+/* 
+    mercadolivre
+    magazineluiza
+    bondfaro
+    jacotei
+    ofertaesperta
+*/
+
+//-------------------------------------------------------------------
+
+//Materiais Esportivos:
+/* 
+    mercadolivre
+    magazineluiza
+    bondfaro
+    ofertaesperta
+    ofertacertaonline
+*/
 
 //-------------------------------------------------------------------
 
 
+
+//-------------------------------------------------------------------
+
 const mercadolivre = 'https://www.mercadolivre.com.br'; //1
-const giassi =  'https://www.giassi.com.br/';   //2
-const magazineluiza = 'https://www.magazineluiza.com.br/';  //3
+const magazineluiza = 'https://www.magazineluiza.com.br/';  //2
+const giassi =  'https://www.giassi.com.br/';  //3
 const kalunga =  'https://www.kalunga.com.br/'; //4
 const colombo =  'https://www.colombo.com.br/';//5
 const bondfaro = 'https://www.bondfaro.com.br'; //6
@@ -551,34 +680,7 @@ const jacotei = 'https://www.jacotei.com.br'; //7
 const ofertaesperta = 'https://www.ofertaesperta.com'; //8
 const ofertacertaonline = 'https://ofertacertaonline.com'; //9
 
-//-------------------------------------------------------------------
-
-const casasdaagua =  'https://www.casasdaagua.com.br/';
-const cassol =  'https://www.cassol.com.br/';
-const queroquero =  'https://www.queroquero.com.br/';
-const havan =  'https://www.havan.com.br/';
-const digitusul =  'https://www.digitusul.com.br/';
-const dell = 'https://www.dell.com/pt-br';
-const kabum = 'https://www.kabum.com.br/';
-const milium =  'https://www.milium.com.br/';
-const casadoeletricistasc =  'https://www.casadoeletricistasc.com.br/';
-const casadosuniformes =  'https://www.casadosuniformes.com.br/';
-const fatimacrianca =  'https://www.fatimacrianca.com.br/';
-const fatimaesportes =  'https://www.fatimaesportes.com.br/';
-const centauro =  'https://www.centauro.com.br/';
-const netshoes =  'https://www.netshoes.com.br/';
-const angeloni = 'https://www.angeloni.com.br/eletro/'; //NUM deu
-const bistek =  'https://www.bistek.com.br/';   //NUM deu
-const americanas =  'https://www.americanas.com.br/';   //NUM deu
-const casasbahia =  'https://www.casasbahia.com.br/'; //NUM deu
-const correaback =  'https://www.correaback.com.br/'; //sem barra de pesquisa
-const madeiramadeira =  'https://www.madeiramadeira.com.br/'; //ID ALEATORIO EM DIVS E INPUTS
-const mobly =  'https://www.mobly.com.br/'; //dificuldades de conseguir os preços, devido a algum problema em classes
-const leroymerlin =  'https://www.leroymerlin.com.br/'; //NUM deu
-const koerich = 'https://www.koerich.com.br/'; //Num deu
-
 (async ()=>{
-    // var item = await readlineSync.question('Qual item vc deseja buscar?');
-    var teste = await getPrecosProdutosPac(ofertacertaonline, 'fone de ouvidos', 9);
+    var teste = await getPrecosProdutosPac(ofertacertaonline, 'Bola de basquete', 9);
     console.log(teste);
 })();
